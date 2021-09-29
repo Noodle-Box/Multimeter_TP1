@@ -6,7 +6,6 @@ from serial import Serial
 #Declaration for root
 root = Tk()
 
-
 #Relevant drop down menus
 
 #for mode
@@ -59,5 +58,6 @@ messagelabel = Label(root, text="Current Message")
 messagelabel.grid(row=8,column=0)
 messageentry = Entry(root, width=10) 
 messageentry.grid(row=8,column=1)
+
 #run all commands
 mainloop()
