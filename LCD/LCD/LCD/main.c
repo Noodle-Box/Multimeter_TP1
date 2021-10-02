@@ -9,6 +9,7 @@
 #include <util/delay.h>
 #include "LCD_LIB/lcd.h"
 #include <stdint.h>
+#define F_CPU 16000000UL	// 16MHz
 
 
 	void change_brightness (int level) {
@@ -32,6 +33,8 @@
 int main(void)
 {	
 	lcd_init(LCD_DISP_ON_CURSOR);
+	/* set bits 6 as outputs*/
+	DDRD = (1<<PORTD6);
 	
 	/* set port B as output*/
 	 DDRC &= 0xF9;
@@ -65,16 +68,25 @@ int main(void)
 	
 	int current_level = 5;
 	
+	/* set output compare values*/
+	OCR0A = 255;
+	
+	/* set up timer/counter 0 for past PWM, set on compare match */
+	TCCR0A = (1<<COM0A0)|(1<<COM0A1)|(1<<WGM01)|(1<<WGM00);
+	TCCR0B = (1 << CS00);
+	
     /* Replace with your application code */
     while (1) 
     {
 		/* if the pin is low decrease the brightness */
 		if((PINC & (1 << PINC0)) == 0){
 			_delay_ms(250);
-			if (current_level - 1 == 0){
-				current_level = 5;
+			if (current_level - 1 <= 0 && OCR0A + 51 > 255){
+				current_level = 0;
+				OCR0A = 255;
 			} else {
 				current_level --;
+				OCR0A = OCR0A + 51;
 			}
 			change_brightness(current_level);
 		}
@@ -83,10 +95,12 @@ int main(void)
 		/* if the pin is high increase the brightness */
 		if((PINC & (1 << PINC1)) == 0){
 			_delay_ms(250);
-			if(current_level + 1 > 5){
+			if(current_level + 1 > 5 && OCR0A - 51 <= 0){
 				current_level = 5;
+				OCR0A = 0;
 			} else {
 				current_level ++;
+				OCR0A = OCR0A - 51;
 			}
 			change_brightness(current_level);
 		}
