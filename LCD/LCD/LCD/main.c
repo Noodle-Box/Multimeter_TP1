@@ -34,10 +34,10 @@ int main(void)
 	lcd_init(LCD_DISP_ON_CURSOR);
 	
 	/* set port B as output*/
-	 DDRB &= 0xF9; */
+	 DDRC &= 0xF9;
 	
 	/* relevant bitshift to activate pullup resistor*/
-	PORTB = (1 << PORTB1) | (1 << PORTB2); 
+	PORTC = (1 << PORTC0) | (1 << PORTC1); 
 	
 
 
@@ -69,7 +69,7 @@ int main(void)
     while (1) 
     {
 		/* if the pin is low decrease the brightness */
-		if((PINB & (1 << PINB1)) == 0){
+		if((PINC & (1 << PINC0)) == 0){
 			_delay_ms(250);
 			if (current_level - 1 == 0){
 				current_level = 5;
@@ -81,7 +81,7 @@ int main(void)
 			
 			
 		/* if the pin is high increase the brightness */
-		if((PINB & (1 << PINB2)) == 0){
+		if((PINC & (1 << PINC1)) == 0){
 			_delay_ms(250);
 			if(current_level + 1 > 5){
 				current_level = 5;
