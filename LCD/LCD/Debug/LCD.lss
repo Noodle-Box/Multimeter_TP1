@@ -3,29 +3,29 @@ LCD.elf:     file format elf32-avr
 
 Sections:
 Idx Name          Size      VMA       LMA       File off  Algn
-  0 .data         0000003a  00800100  00000428  0000049c  2**0
+  0 .data         0000003a  00800100  00000426  0000049a  2**0
                   CONTENTS, ALLOC, LOAD, DATA
-  1 .text         00000428  00000000  00000000  00000074  2**1
+  1 .text         00000426  00000000  00000000  00000074  2**1
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
-  2 .comment      00000030  00000000  00000000  000004d6  2**0
+  2 .comment      00000030  00000000  00000000  000004d4  2**0
                   CONTENTS, READONLY
-  3 .note.gnu.avr.deviceinfo 00000040  00000000  00000000  00000508  2**2
+  3 .note.gnu.avr.deviceinfo 00000040  00000000  00000000  00000504  2**2
                   CONTENTS, READONLY
-  4 .debug_aranges 000000b8  00000000  00000000  00000548  2**0
+  4 .debug_aranges 000000b8  00000000  00000000  00000544  2**0
                   CONTENTS, READONLY, DEBUGGING
-  5 .debug_info   00001045  00000000  00000000  00000600  2**0
+  5 .debug_info   00001045  00000000  00000000  000005fc  2**0
                   CONTENTS, READONLY, DEBUGGING
-  6 .debug_abbrev 00000952  00000000  00000000  00001645  2**0
+  6 .debug_abbrev 00000952  00000000  00000000  00001641  2**0
                   CONTENTS, READONLY, DEBUGGING
-  7 .debug_line   0000094e  00000000  00000000  00001f97  2**0
+  7 .debug_line   00000948  00000000  00000000  00001f93  2**0
                   CONTENTS, READONLY, DEBUGGING
-  8 .debug_frame  000001a0  00000000  00000000  000028e8  2**2
+  8 .debug_frame  000001a0  00000000  00000000  000028dc  2**2
                   CONTENTS, READONLY, DEBUGGING
-  9 .debug_str    000004de  00000000  00000000  00002a88  2**0
+  9 .debug_str    000004de  00000000  00000000  00002a7c  2**0
                   CONTENTS, READONLY, DEBUGGING
- 10 .debug_loc    00000899  00000000  00000000  00002f66  2**0
+ 10 .debug_loc    000008b6  00000000  00000000  00002f5a  2**0
                   CONTENTS, READONLY, DEBUGGING
- 11 .debug_ranges 000000b0  00000000  00000000  000037ff  2**0
+ 11 .debug_ranges 000000b0  00000000  00000000  00003810  2**0
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
@@ -70,7 +70,7 @@ Disassembly of section .text:
   74:	11 e0       	ldi	r17, 0x01	; 1
   76:	a0 e0       	ldi	r26, 0x00	; 0
   78:	b1 e0       	ldi	r27, 0x01	; 1
-  7a:	e8 e2       	ldi	r30, 0x28	; 40
+  7a:	e6 e2       	ldi	r30, 0x26	; 38
   7c:	f4 e0       	ldi	r31, 0x04	; 4
   7e:	02 c0       	rjmp	.+4      	; 0x84 <__do_copy_data+0x10>
   80:	05 90       	lpm	r0, Z+
@@ -79,7 +79,7 @@ Disassembly of section .text:
   86:	b1 07       	cpc	r27, r17
   88:	d9 f7       	brne	.-10     	; 0x80 <__do_copy_data+0xc>
   8a:	0e 94 a5 01 	call	0x34a	; 0x34a <main>
-  8e:	0c 94 12 02 	jmp	0x424	; 0x424 <_exit>
+  8e:	0c 94 11 02 	jmp	0x422	; 0x422 <_exit>
 
 00000092 <__bad_interrupt>:
   92:	0c 94 00 00 	jmp	0	; 0x0 <__vectors>
@@ -751,29 +751,28 @@ int main(void)
  402:	00 c0       	rjmp	.+0      	; 0x404 <__LOCK_REGION_LENGTH__+0x4>
  404:	00 00       	nop
 			_delay_ms(250);
-			if(current_mode <= 4){
- 406:	05 30       	cpi	r16, 0x05	; 5
- 408:	11 05       	cpc	r17, r1
- 40a:	1c f4       	brge	.+6      	; 0x412 <__LOCK_REGION_LENGTH__+0x12>
+			if(current_mode + 1 <= 4){
+ 406:	0f 5f       	subi	r16, 0xFF	; 255
+ 408:	1f 4f       	sbci	r17, 0xFF	; 255
+ 40a:	05 30       	cpi	r16, 0x05	; 5
+ 40c:	11 05       	cpc	r17, r1
+ 40e:	14 f0       	brlt	.+4      	; 0x414 <__LOCK_REGION_LENGTH__+0x14>
 				current_mode++;
- 40c:	0f 5f       	subi	r16, 0xFF	; 255
- 40e:	1f 4f       	sbci	r17, 0xFF	; 255
- 410:	02 c0       	rjmp	.+4      	; 0x416 <__LOCK_REGION_LENGTH__+0x16>
 			} else {
-				current_mode = 0;
- 412:	00 e0       	ldi	r16, 0x00	; 0
- 414:	10 e0       	ldi	r17, 0x00	; 0
+				current_mode = 1;
+ 410:	01 e0       	ldi	r16, 0x01	; 1
+ 412:	10 e0       	ldi	r17, 0x00	; 0
 			}
 			change_mode(current_mode);
- 416:	c8 01       	movw	r24, r16
- 418:	0e 94 6e 01 	call	0x2dc	; 0x2dc <change_mode>
+ 414:	c8 01       	movw	r24, r16
+ 416:	0e 94 6e 01 	call	0x2dc	; 0x2dc <change_mode>
 			change_brightness(current_level);
- 41c:	ce 01       	movw	r24, r28
- 41e:	0e 94 3e 01 	call	0x27c	; 0x27c <change_brightness>
- 422:	b2 cf       	rjmp	.-156    	; 0x388 <main+0x3e>
+ 41a:	ce 01       	movw	r24, r28
+ 41c:	0e 94 3e 01 	call	0x27c	; 0x27c <change_brightness>
+ 420:	b3 cf       	rjmp	.-154    	; 0x388 <main+0x3e>
 
-00000424 <_exit>:
- 424:	f8 94       	cli
+00000422 <_exit>:
+ 422:	f8 94       	cli
 
-00000426 <__stop_program>:
- 426:	ff cf       	rjmp	.-2      	; 0x426 <__stop_program>
+00000424 <__stop_program>:
+ 424:	ff cf       	rjmp	.-2      	; 0x424 <__stop_program>

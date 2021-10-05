@@ -116,10 +116,10 @@ int main(void)
 		/* if pin changes change mode*/
 		if((PINC & (1<<PINC2)) == 0){
 			_delay_ms(250);
-			if(current_mode <= 4){
+			if(current_mode + 1 <= 4){
 				current_mode++;
 			} else {
-				current_mode = 0;
+				current_mode = 1;
 			}
 			change_mode(current_mode);
 			change_brightness(current_level);
