@@ -13,6 +13,7 @@
 #include <compat/twi.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include "i2cmaster.h"
 
 #define BAUD 9600
@@ -27,18 +28,20 @@
 void uart_init(uint8_t baud);
 void uart_transmit(unsigned char data);
 unsigned char uart_receive(void);
+void uart_newline(void);
 
 void ads1115_write(uint8_t addr, uint8_t pointerReg, uint16_t configReg);
 uint16_t ads1115_read(uint8_t addr, uint8_t pointerReg);
 uint16_t ads1115_read_SE(uint8_t addr, uint16_t configReg);
 int16_t ads1115_read_DIFF_A2_A3(uint8_t addr, uint16_t configReg);
+uint32_t sum, final;
 
 int main(void) {
 	//uint8_t UBBRValue = FCPU/(16*BAUD)-1;
 	uint8_t UBBRValue = 49;
 	uart_init(UBBRValue);
 	i2c_init();
-	uint16_t ads1115Config = 0b11 << 0 | 0b100 << 5 | 0b01 << 8 | 0b001 << 9 | 0b011 << 12 | 0b01 << 15;
+	uint16_t ads1115Config = 0b11 << 0 | 0b111 << 5 | 0b01 << 8 | 0b010 << 9 | 0b011 << 12 | 0b01 << 15;
 		
 	int16_t dataBinary;
 	float dataVoltage;
@@ -48,23 +51,48 @@ int main(void) {
 
 	while (1) {
 		
+		/**************************************************************/
+		/*					DC VOLTAGE								  */
 		
 		dataBinary = ads1115_read_DIFF_A2_A3(ADS1115_ADDR, ads1115Config);
+		sprintf(buff, "%d", dataBinary);
 		
-		dataVoltage = (dataBinary/7999.88)*4;
+		dataVoltage = (dataBinary-32)/1006.4;
 		dtostrf(dataVoltage, 4, 3, voltageString);
 		for (int i = 0; i < sizeof(voltageString); i++) {
 			uart_transmit(voltageString[i]);
 		}
 		
 		
-		uart_transmit('\n');
-		uart_transmit('\r');
-		_delay_ms(1000);
+		/*************************************************************/
+		/*					AC VOLTAGE								 */
+		/*
+		sum = 0;
+		for (int i = 0; i < 1600; i++) {
+			dataBinary = ads1115_read_DIFF_A2_A3(ADS1115_ADDR, ads1115Config);
+			dataVoltage = ((float)dataBinary-32.0)/1006.4;
+			sum += (dataVoltage*dataVoltage);			
+		}
+		sum = sum/1600;
+		final = sqrt(sum);
+		dtostrf(dataVoltage, 4, 3, voltageString);
+		for (int i = 0; i < sizeof(voltageString); i++) {
+			uart_transmit(voltageString[i]);
+		}
+		*/
+		
+		
+		uart_newline();
+	//	_delay_ms(1000);
 	}
 	
 }
 
+void uart_newline(void) {
+	uart_transmit('\n');
+	uart_transmit('\r');
+	return;
+}
 /*******************************************************************/
 /*                      UART FUNCTIONS                             */
 void uart_init(uint8_t ubrr) {
@@ -97,7 +125,6 @@ ISR(USART_RX_vect) {
 	unsigned char dummy;
 	dummy = uart_receive();
 	uart_transmit(dummy);
-	
 }
 
 
@@ -152,7 +179,7 @@ int16_t ads1115_read_DIFF_A2_A3(uint8_t addr, uint16_t configReg) {
 	 * Read from channel 2 and 3 in diff mode
 	 */
 	ads1115_write(addr, ADS1115_REG_CONFIG, configReg);
-	_delay_ms(8);
+	//_delay_ms(8);
 	return (int16_t)ads1115_read(addr, ADS1115_REG_CONVERSION);
 	
 }
