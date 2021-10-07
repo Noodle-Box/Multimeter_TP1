@@ -136,10 +136,16 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="LCD_LIB\i2cmaster.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="LCD_LIB\lcd.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="LCD_LIB\lcd.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="LCD_LIB\twimaster.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="main.c">

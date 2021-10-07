@@ -4,5 +4,7 @@
 
 LCD_LIB\lcd.c
 
+LCD_LIB\twimaster.c
+
 main.c
 
