@@ -15,7 +15,7 @@ continuity = 2.0 #continuity value
 
 ports = [comport.device for comport in serial.tools.list_ports.comports()]
 port = serial.Serial()
-baudrate = 2400
+baudrate = 9600
 ser = NONE
 
 foundport = False
@@ -26,18 +26,21 @@ def read_serial():
     global resetflag
     global port
 
-    #while True:
-    #    if port:
-    #        if not hold:
-    #            try:
-    #                ser_string = str(port.readline())
-    #                ser_string[ser_string.index('[') + 1:ser_string.index(']')].split(',')
-    #            except serial.serialutil.SerialException:
-    #                pass
+    while True:
+        if port:
+            ser_string = str(port.readline())
+            print(ser_string)
+        else:
+            print("no reading")
+    
+    
 
 class GUI:
     def __init__(self,master):
+        self.meas = 0
         self.master = master
+        self.currentMeas = StringVar()
+        self.currentMeas.set("0")
 
         #Relevant menus for buttons
         #backlight level
@@ -62,8 +65,8 @@ class GUI:
         self.var = StringVar()
         self.var.set(LEVELS[4])
         self.lightmenu = tk.OptionMenu(master, self.var, *LEVELS)
-        self.var_port = StringVar()
-        portnamefield = tk.OptionMenu(master, self.var_port,*ports)
+        self.var_port = tk.StringVar()
+        portoption = tk.OptionMenu(master, self.var_port, *ports)
         
         #LABELS
         self.modelabel = Label(master,text="Current Mode: DC")
@@ -72,12 +75,13 @@ class GUI:
         self.maxlabel = Label(master, text ="Maximum: " + str(maximum))
         self.data = Label(master, text= "Current Reading: " + str(current))
         portnamelabel = tk.Label(master, text="Select Port: ")
+        self.updatelabel = tk.Label(master, textvariable=self.currentMeas)
 
         #Grid the buttons on
         self.lightlabel.grid(row=0,column=0)
         self.lightmenu.grid(row=0,column=1)
         portnamelabel.grid(row=0,column=3)
-        portnamefield.grid(row=0,column=4)
+        portoption.grid(row=0,column=4)
         PortButton.grid(row=0,column=5)
         self.DCButton.grid(row=1,column=1)
         self.ACButton.grid(row=1,column=2)
@@ -89,15 +93,18 @@ class GUI:
         self.maxlabel.grid(row=5,column=0)
         self.ResetButton.grid(row=6,column=0)
         self.HoldButton.grid(row=6,column=1)
+        self.updatelabel.grid(row=7,column=1)
 
     def dc_voltage(self):
         currentmode = "DC"
-        self.modelabel.config(text= "Current Mode: DC")
+        current = str(port.readline())
+        self.modelabel.config(text= "Current Mode: DC" + current)
 
     def AC(self):
         currentmode = "AC"
         self.modelabel.config(text= "Current Mode: AC")
         self.data.config(text=   "DC Offset: " + str(offset)   + "   AC Voltage: " + str(current) + " Vrms")
+
 
     def Resistance(self):
         currentmode = "Resistance"
@@ -128,7 +135,9 @@ class GUI:
         except serial.serialutil.SerialException:
             port = None
 
+
 if __name__ == "__main__":
     root = tk.Tk()
     GUI(root)
-    root.mainloop()
+    root.update()
+    root.mainloop() 

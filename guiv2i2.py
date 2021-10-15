@@ -27,6 +27,7 @@ def readline():
         current = port.readline()
         print(current)
         currentmeas.set(current)
+        #root.after(500,readline())
 
 readings = threading.Thread(target=readline)
 

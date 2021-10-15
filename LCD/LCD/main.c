@@ -35,6 +35,63 @@ uint16_t ads1115_read_SE(uint8_t addr, uint16_t configReg);
 int16_t ads1115_read_DIFF_A2_A3(uint8_t addr, uint16_t configReg);
 uint32_t sum, final;
 
+int current_level = 4;
+int current_mode;
+int hold  = 0;
+
+/*INTERRUPT HANDLER*/
+ISR(PCINT1_vect){
+	/*check what button was pressed*/
+			/* if the pin is low decrease the brightness */
+			if((PINC & (1 << PINC0)) == 0){
+				_delay_ms(250);
+				if (current_level - 1 <= 0 && OCR0A + 63 > 251){
+					current_level = 0;
+					OCR0A = 255;
+					} else {
+					current_level --;
+					OCR0A = OCR0A + 63;
+				}
+				change_brightness(current_level);
+			}
+			
+			
+			/* if the pin is high increase the brightness */
+			if((PINC & (1 << PINC1)) == 0){
+				_delay_ms(250);
+				if(current_level + 1 >= 4 && OCR0A - 63 <= 3){
+					current_level = 4;
+					OCR0A = 0;
+					} else {
+					current_level ++;
+					OCR0A = OCR0A - 63;
+				}
+				change_brightness(current_level);
+			}
+			
+			/* if pin changes change mode*/
+			if((PINC & (1<<PINC2)) == 0){
+				_delay_ms(250);
+				if(current_mode + 1 <= 4){
+					current_mode++;
+					} else {
+					current_mode = 1;
+				}
+				change_mode(current_mode);
+				change_brightness(current_level);
+			}
+			
+			if((PINC && PINC3) == 0){
+				_delay_ms(250);
+				if(hold == 0){
+					hold = 1;
+				} else {
+					hold = 0;
+				}
+			}
+}
+
+
 /* BRIGHTNESS STUFF*/
 	void change_brightness (int level) {
 		
@@ -53,21 +110,7 @@ uint32_t sum, final;
 		}
 	}
 	
-	void AC_voltage(){
-	}
 	
-	void DC_voltage(){
-		
-	}
-	
-	void updatemeas(int mode){
-		if (mode == 1){
-			DC_voltage();
-		}
-		else if (mode == 2){
-			AC_voltage();
-		}
-	}		
 
 	void change_mode(int mode){
 			if(mode == 1){
@@ -94,7 +137,7 @@ uint32_t sum, final;
 
 int main(void)
 {	
-	lcd_init(LCD_DISP_ON_CURSOR);
+	lcd_init(LCD_DISP_ON);
 	/* set bits 6 as outputs*/
 	DDRD = (1<<PORTD6);
 	
@@ -102,14 +145,21 @@ int main(void)
 	 DDRC &= 0xF9;
 	
 	/* relevant bitshift to activate pullup resistor*/
-	PORTC = (1 << PORTC0) | (1 << PORTC1) | (1 << PORTC2); 
+	PORTC = (1 << PORTC0) | (1 << PORTC1) | (1 << PORTC2)| (1 << PORTC3); 
 
 	/*clear the LCD screen*/
 	lcd_clrscr();
 
 	/*create the bar and relevant messages*/    
-	 int current_level = 4;
+	 // int current_level = 4;
 	 int current_mode = 1;
+	
+	/*Set Up Interrupts*/
+	PCICR = (1<<PCIE1);
+	
+	//Trigger interrupts on changes to the following pins (C0, C1, C2, C3)
+	PCMSK1 = (1<<PCINT8)|(1<<PCINT9)|(1<<PCINT10)|(1<<PCINT11);
+	
 	
 	/* set output compare values*/
 	OCR0A = 0;
@@ -121,78 +171,51 @@ int main(void)
 	TCCR0B = (1 << CS00);
 /*UART I2C INIT*/
 	//uint8_t UBBRValue = FCPU/(16*BAUD)-1;
+	
 	uint8_t UBBRValue = 49;
 	uart_init(UBBRValue);
 	i2c_init();
 	uint16_t ads1115Config = 0b11 << 0 | 0b111 << 5 | 0b01 << 8 | 0b010 << 9 | 0b011 << 12 | 0b01 << 15;
 	
 	int16_t dataBinary;
-	float dataVoltage;
+	double dataVoltage, sum, final;
 	char buff[16];
 	char voltageString[8];
+	char volt[3] = "V";
 	sei();
+
 
 
     /* Replace with your application code */
     while (1) 
     {
 		
-		/* if the pin is low decrease the brightness */
-		if((PINC & (1 << PINC0)) == 0){
-			_delay_ms(250);
-			if (current_level - 1 <= 0 && OCR0A + 63 > 251){
-				current_level = 0;
-				OCR0A = 255;
-			} else {
-				current_level --;
-				OCR0A = OCR0A + 63;
-			}
-			change_brightness(current_level);
-		}
-			
-			
-		/* if the pin is high increase the brightness */
-		if((PINC & (1 << PINC1)) == 0){
-			_delay_ms(250);
-			if(current_level + 1 >= 4 && OCR0A - 63 <= 3){
-				current_level = 4;
-				OCR0A = 0;
-			} else {
-				current_level ++;
-				OCR0A = OCR0A - 63;
-			}
-			change_brightness(current_level);
-		}
-		
-		/* if pin changes change mode*/
-		if((PINC & (1<<PINC2)) == 0){
-			_delay_ms(250);
-			if(current_mode + 1 <= 4){
-				current_mode++;
-			} else {
-				current_mode = 1;
-			}
-			change_mode(current_mode);
-			change_brightness(current_level);
-		}
+
 		
 						
-				/**************************************************************/
-				/*					DC VOLTAGE								  */
-				
-				dataBinary = ads1115_read_DIFF_A2_A3(ADS1115_ADDR, ads1115Config);
-				sprintf(buff, "%d", dataBinary);
-				
-				dataVoltage = (dataBinary-32)/1006.4;
-				dtostrf(dataVoltage, 4, 3, voltageString);
-				for (int i = 0; i < sizeof(voltageString); i++) {
-					uart_transmit(voltageString[i]);
-				}
+		/*************************************************************/
+		/*					AC VOLTAGE								 */
+		/*
+		sum = 0;
+		for (int i = 0; i < 200; i++) {
+			dataBinary = ads1115_read_DIFF_A2_A3(ADS1115_ADDR, ads1115Config);
+			dataVoltage = ((double)dataBinary-32.0)/1006.4;
+			
+			sum += (dataVoltage*dataVoltage);
+		}
+		
+		sum = sum/200;
+		final = sqrt(sum);
+		
+		dtostrf(final, 4, 3, voltageString);
+		for (int i = 0; i < sizeof(voltageString); i++) {
+			uart_transmit(voltageString[i]);
+		}
 				uart_newline();
 				lcd_gotoxy(0,1);
+				strcat(voltageString,volt)
 				lcd_puts(voltageString);
-		
-			
+				*/
 	}
 }
 
