@@ -1,4 +1,5 @@
-Multimeter for ENGG2800 - Team Project I
+# Multimeter for ENGG2800
+Bluetooth Keyboard for Team Project I
 
 Features:
 - DC Voltage
